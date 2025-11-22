@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: notifications-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notifications_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - notifications-network
+
+  # RabbitMQ Local - COMENTADO (ahora usamos CloudAMQP)
+  # Descomentar solo si quieres usar RabbitMQ local para desarrollo
+  # rabbitmq:
+  #   image: rabbitmq:3.12-management-alpine
+  #   container_name: notifications-rabbitmq
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
+  #   ports:
+  #     - "5672:5672"   # AMQP port
+  #     - "15672:15672" # Management UI
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
+  #   networks:
+  #     - notifications-network
+  #   healthcheck:
+  #     test: rabbitmq-diagnostics -q ping
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  notifications-api:
+    build: .
+    container_name: notifications-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8003:8003"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+    networks:
+      - notifications-network
+
+  notifications-consumer:
+    build: .
+    container_name: notifications-consumer
+    command: python -m app.consumers.notification_consumer
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+      - notifications-api
+    networks:
+      - notifications-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+
+networks:
+  notifications-network:
+    driver: bridge

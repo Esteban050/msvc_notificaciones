@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python seed_auth_templates.py)",
+      "Bash(pytest:*)",
+      "Bash(docker:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

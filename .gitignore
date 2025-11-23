@@ -69,3 +69,5 @@ FRONTEND_INTEGRATION.md
 pytest.ini
 .env
 TESTING.md
+.claude
+
